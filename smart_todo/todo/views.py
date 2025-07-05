@@ -3,7 +3,7 @@ from .models import Task, ContextEntry, Category
 from .serializers import TaskSerializer, ContextEntrySerializer, CategorySerializer
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .ai_utils import suggest_task_features
+from .ai_utils import suggest_task_features, recommend_task_to_start
 
 class TaskViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.all()
@@ -23,3 +23,10 @@ def ai_suggestions(request):
     context_data = request.data.get('context', [])
     suggestions = suggest_task_features(task_data, context_data)
     return Response(suggestions)
+
+@api_view(["POST"])
+def recommend_task(request):
+    tasks = Task.objects.filter(status="pending")
+    serializer = TaskSerializer(tasks, many=True)
+    result = recommend_task_to_start(serializer.data)
+    return Response(result)
