@@ -2,6 +2,8 @@ import requests
 import json
 import re
 
+from datetime import datetime
+
 def extract_json(text):
     try:
         json_data = re.search(r"\{.*\}", text, re.DOTALL).group()
@@ -15,7 +17,10 @@ def extract_json(text):
             "recommended_category": "General"
         }
 
+
 def suggest_task_features(task_data, context_data):
+    current_year = datetime.now().year
+
     prompt = f"""
 You are a smart task assistant.
 
@@ -30,9 +35,14 @@ Based on this, return ONLY a JSON object like:
 {{
   "improved_description": "...",
   "priority_score": 0.0 to 1.0,
-  "suggested_deadline": "YYYY-MM-DD",
+  "suggested_deadline": "YYYY-MM-DD",  # use a realistic deadline in the current year (e.g., {current_year})
   "recommended_category": "..."
 }}
+
+Make sure:
+- The deadline is relevant and falls in the current year ({current_year})
+- Priority score is based on urgency and context
+- Description should be clear and specific
 """
 
     try:
@@ -60,13 +70,14 @@ Based on this, return ONLY a JSON object like:
         return {
             "improved_description": "Could not connect to model",
             "priority_score": 0.5,
-            "suggested_deadline": "2025-07-10",
+            "suggested_deadline": f"{current_year}-07-10",
             "recommended_category": "General"
         }
 
+
 def recommend_task_to_start(tasks):
     task_block = "\n".join(
-        [f"{i+1}. {t['title']} (Priority: {t['priority_score']}, Deadline: {t['deadline']})"
+        [f"{i}. {t['title']} (Priority: {t['priority_score']}, Deadline: {t['deadline']})"
          for i, t in enumerate(tasks)]
     )
 
@@ -80,7 +91,7 @@ Pick ONE task the user should do first. Be smart and consider priority_score (0â
 
 Return ONLY a JSON object like:
 {{
-  "recommended_task_index": 2,
+  "recommended_task_index": 0,  # zero-based index (0 = first task)
   "reason": "This task has the closest deadline and highest priority."
 }}
 """
